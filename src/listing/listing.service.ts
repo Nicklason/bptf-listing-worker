@@ -3,7 +3,10 @@ import { ItemService } from '../item/item.service';
 import * as SKU from 'tf2-sku';
 import { ConfigService } from '@nestjs/config';
 import { Config, Services } from '../common/config/configuration';
-import { Listing } from '../listing/interfaces/listing.interface';
+import {
+  ClassifiedsSearchResponse,
+  Listing,
+} from './interfaces/classifieds-search.interface';
 
 @Injectable()
 export class ListingService {
@@ -75,29 +78,19 @@ export class ListingService {
     }
 
     return this.httpService
-      .get('https://backpack.tf/api/classifieds/search/v1', {
-        params: qs,
-      })
+      .get<ClassifiedsSearchResponse>(
+        'https://backpack.tf/api/classifieds/search/v1',
+        {
+          params: qs,
+        },
+      )
       .toPromise()
       .then((response) => {
-        const listings = response.data.sell.listings.concat(
-          response.data.buy.listings,
-        );
+        const listings: Listing[] = []
+          .concat(response.data.sell.listings)
+          .concat(response.data.buy.listings);
 
-        return listings.map((listing) => ({
-          id: listing.id,
-          steamid64: listing.steamid,
-          item: listing.item,
-          intent: listing.intent,
-          currencies: {
-            keys: listing.currencies.keys ?? 0,
-            metal: listing.currencies.metal ?? 0,
-          },
-          isAutomatic: listing.automatic === 1,
-          isOffers: listing.offers === 1,
-          createdAt: new Date(listing.created * 1000),
-          bumpedAt: new Date(listing.bump * 1000),
-        }));
+        return listings;
       });
   }
 }
